@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Letters Game</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #282c34;
+            color: #fff;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #left-sidebar {
+            flex: 1;
+            background: #20232a;
+            padding: 20px;
+            border-right: 2px solid #61dafb;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #left-sidebar a {
+            color: #61dafb;
+            text-decoration: none;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        #left-sidebar a:hover {
+            color: #21a1f1;
+        }
+
+        #game-container {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #score {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        #gameCanvas {
+            border: 3px solid #61dafb;
+            background: #121212;
+            border-radius: 10px;
+        }
+
+        #sidebar {
+            flex: 1;
+            padding: 20px;
+            background: #20232a;
+            border-left: 2px solid #61dafb;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .button {
+            background-color: #61dafb;
+            color: #121212;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+            align-self: center;
+        }
+
+        .button:hover {
+            background-color: #21a1f1;
+        }
+
+        h2 {
+            color: #61dafb;
+            margin-bottom: 10px;
+        }
+
+        p {
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10;
+        }
+
+        #start-screen h1 {
+            font-size: 36px;
+            color: #61dafb;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="left-sidebar">
+        <a href="aiwebapp.html" >My AI Game</a>
+        <a href="skiing.html" >My Scratch Page</a>
+        <a href="../index.html" >My Home Page</a>
+    </div>
+    <div id="game-container">
+        <div id="start-screen">
+            <h1>Falling Letters Game</h1>
+            <button class="button" id="start-btn">Start Game</button>
+        </div>
+        <div id="score">Score: 0</div>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <button class="button" id="restart-btn" style="display: none;">Restart Game</button>
+    </div>
+    <div id="sidebar">
+        <h2>How to Play</h2>
+        <p>Letters will fall from the top of the screen. Your goal is to press the matching key on your keyboard to remove the letters before they reach the bottom.</p>
+        <p>Score 50 points to win and unlock Boss Mode! In Boss Mode, the letters fall faster, and the target score is 100.</p>
+        <p>If a letter reaches the bottom, the game is over.</p>
+        <p>Press the "Restart Game" button to play again.</p>
+    </div>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const restartButton = document.getElementById("restart-btn");
+        const startButton = document.getElementById("start-btn");
+        const startScreen = document.getElementById("start-screen");
+        const scoreDisplay = document.getElementById("score");
+
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let fallingLetters = [];
+        let score = 0;
+        let gameSpeed = 2;
+        let gameRunning = false;
+        let bossMode = false;
+
+        // Random letter generator
+        function getRandomLetter() {
+            return letters[Math.floor(Math.random() * letters.length)];
+        }
+
+        // Falling Letter Class
+        class FallingLetter {
+            constructor() {
+                this.letter = getRandomLetter();
+                this.x = Math.random() * (canvas.width - 30);
+                this.y = -50;
+                this.speed = gameSpeed;
+            }
+
+            draw() {
+                const gradient = ctx.createLinearGradient(this.x, this.y, this.x + 20, this.y + 40);
+                gradient.addColorStop(0, "red");
+                gradient.addColorStop(0.5, "orange");
+                gradient.addColorStop(1, "yellow");
+
+                ctx.font = "30px Arial";
+                ctx.fillStyle = gradient;
+                ctx.fillText(this.letter, this.x, this.y);
+            }
+
+            update() {
+                this.y += this.speed;
+            }
+        }
+
+        // Add new letters at intervals
+        setInterval(() => {
+            if (gameRunning) fallingLetters.push(new FallingLetter());
+        }, 1000);
+
+        // Game loop
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            fallingLetters.forEach((letter, index) => {
+                letter.draw();
+                letter.update();
+
+                // Check if a letter reaches the bottom
+                if (letter.y > canvas.height) {
+                    alert(`Game Over! Final Score: ${score}`);
+                    gameRunning = false;
+                    restartButton.style.display = "block";
+                }
+            });
+
+            // Remove letters that are off the screen
+            fallingLetters = fallingLetters.filter(letter => letter.y <= canvas.height);
+
+            // Display score
+            scoreDisplay.innerText = `Score: ${score}`;
+
+            if (!bossMode && score >= 50) {
+                const choice = confirm("Congratulations! You've reached 50 points! Continue to Boss Mode?");
+                if (choice) {
+                    bossMode = true;
+                    gameSpeed *= 2; // Double the speed
+                } else {
+                    alert("Game Over. Thanks for playing!");
+                    gameRunning = false;
+                    restartButton.style.display = "block";
+                }
+            }
+
+            if (bossMode && score >= 100) {
+                alert("Congratulations! You completed Boss Mode!");
+                gameRunning = false;
+                restartButton.style.display = "block";
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Listen for keypress events
+        document.addEventListener("keydown", (e) => {
+            if (!gameRunning) return;
+
+            const keyPressed = e.key.toUpperCase();
+            const index = fallingLetters.findIndex(letter => letter.letter === keyPressed);
+
+            if (index !== -1) {
+                fallingLetters.splice(index, 1);
+                score++;
+                if (!bossMode && score % 5 === 0) {
+                    gameSpeed += 0.5; // Increase speed in normal mode
+                }
+            }
+        });
+
+        // Start game
+        startButton.addEventListener("click", () => {
+            gameRunning = true;
+            startScreen.style.display = "none";
+            gameLoop();
+        });
+
+        // Restart game
+        restartButton.addEventListener("click", () => {
+            score = 0;
+            gameSpeed = 2;
+            fallingLetters = [];
+            gameRunning = true;
+            bossMode = false;
+            restartButton.style.display = "none";
+            gameLoop();
+        });
+
+        // Ensure game does not start automatically
+        gameRunning = false;
+    </script>
+</body>
+</html>
